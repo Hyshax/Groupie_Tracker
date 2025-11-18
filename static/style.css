@@ -1,0 +1,72 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: system-ui, Arial, sans-serif;
+    background-color: #3a3a3a;
+    color: white;
+}
+
+/* Header */
+.header {
+    text-align: center;
+    padding: 30px 20px 10px;
+}
+
+.header h1 {
+    font-size: 2.2rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.header p {
+    margin-top: 5px;
+    opacity: 0.8;
+}
+
+/* GRID */
+.artists-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* 4 groupes par ligne */
+    gap: 40px;
+    padding: 40px 60px 60px;
+    justify-items: center;
+    align-items: start;
+}
+
+
+/* Cards */
+.artist-card {
+    text-align: center;
+}
+
+/* Cercle autour des images */
+.artist-image-wrapper {
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 4px solid white;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.45);
+    transition: 0.25s;
+}
+
+.artist-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.artist-card:hover .artist-image-wrapper {
+    transform: scale(1.05);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+}
+
+/* Texte nom de l’artiste */
+.artist-name {
+    margin-top: 8px;
+    font-size: 1rem;
+}

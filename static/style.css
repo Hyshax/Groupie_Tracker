@@ -10,7 +10,6 @@ body {
     color: white;
 }
 
-/* Header */
 .header {
     text-align: center;
     padding: 30px 20px 10px;
@@ -27,7 +26,6 @@ body {
     opacity: 0.8;
 }
 
-/* GRID */
 .artists-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr); /* 4 groupes par ligne */
@@ -37,13 +35,10 @@ body {
     align-items: start;
 }
 
-
-/* Cards */
 .artist-card {
     text-align: center;
 }
 
-/* Cercle autour des images */
 .artist-image-wrapper {
     width: 220px;
     height: 220px;
@@ -65,7 +60,6 @@ body {
     box-shadow: 0 15px 35px rgba(0,0,0,0.6);
 }
 
-/* Texte nom de l’artiste */
 .artist-name {
     margin-top: 8px;
     font-size: 1rem;

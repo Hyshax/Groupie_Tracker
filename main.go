@@ -2,93 +2,42 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"html/template"
-	"io"
 	"log"
 	"net/http"
 )
 
-var tmpl = template.Must(template.ParseFiles("index.html"))
+var tmpl = template.Must(template.ParseFiles("templates/index.html"))
 
-type Reponse struct {
-	Message string `json:"message"`
+// Artist correspond à un artiste renvoyé par l'API
+type Artist struct {
+	ID           int      `json:"id"`
+	Name         string   `json:"name"`
+	Image        string   `json:"image"`
+	Members      []string `json:"members"`
+	CreationDate int      `json:"creationDate"`
+	FirstAlbum   string   `json:"firstAlbum"`
 }
 
-func GetArtists() {
-	// 1. Envoyer la requête
+// GetArtists récupère la liste des artistes depuis l'API Groupie Tracker
+func GetArtists() ([]Artist, error) {
 	resp, err := http.Get("https://groupietrackers.herokuapp.com/api/artists")
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	defer resp.Body.Close()
 
-	// 2. Lire la réponse
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		panic(err)
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("statut HTTP inattendu : %s", resp.Status)
 	}
 
-	// 3. (Optionnel) Décoder le JSON
-	var data Reponse
-	if err := json.Unmarshal(body, &data); err != nil {
-		panic(err)
+	var artists []Artist
+	if err := json.NewDecoder(resp.Body).Decode(&artists); err != nil {
+		return nil, err
 	}
 
-}
-
-func GetDates() {
-	// 1
-	resp, err := http.Get("https://groupietrackers.herokuapp.com/api/dates")
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
-	// 2
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	var data Reponse
-	if err := json.Unmarshal(body, &data); err != nil {
-		panic(err)
-	}
-}
-
-func GetLocations() {
-	// 1
-	resp, err := http.Get("https://groupietrackers.herokuapp.com/api/locations")
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
-	// 2
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		panic(err)
-	}
-	var data Reponse
-	if err := json.Unmarshal(body, &data); err != nil {
-		panic(err)
-	}
-}
-
-func GetRealations() {
-	// 1
-	resp, err := http.Get("https://groupietrackers.herokuapp.com/api/relation")
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
-	// 2
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		panic(err)
-	}
-	var data Reponse
-	if err := json.Unmarshal(body, &data); err != nil {
-		panic(err)
-	}
+	return artists, nil
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
@@ -109,7 +58,9 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	http.HandleFunc("/", homeHandler)
 
-	fs := http.FileServer(http.Dir("static"))
+	// On sert les fichiers statiques depuis le dossier courant "."
+	// de cette façon, /static/style.css correspondra à ./style.css
+	fs := http.FileServer(http.Dir("."))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	log.Println("Serveur sur http://localhost:8080")

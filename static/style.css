@@ -28,12 +28,15 @@ body {
 
 .artists-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr); /* 4 groupes par ligne */
-    gap: 40px;
-    padding: 40px 60px 60px;
+    grid-template-columns: repeat(5, 1fr);
+    column-gap: 80px;
+    row-gap: 40px;
+    max-width: 1400px;
+    margin: 0 auto 60px;
     justify-items: center;
     align-items: start;
 }
+
 
 .artist-card {
     text-align: center;

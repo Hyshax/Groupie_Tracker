@@ -10,7 +10,6 @@ import (
 
 var tmpl = template.Must(template.ParseFiles("templates/index.html"))
 
-// Artist correspond à un artiste renvoyé par l'API
 type Artist struct {
 	ID           int      `json:"id"`
 	Name         string   `json:"name"`
@@ -20,7 +19,6 @@ type Artist struct {
 	FirstAlbum   string   `json:"firstAlbum"`
 }
 
-// GetArtists récupère la liste des artistes depuis l'API Groupie Tracker
 func GetArtists() ([]Artist, error) {
 	resp, err := http.Get("https://groupietrackers.herokuapp.com/api/artists")
 	if err != nil {
@@ -57,14 +55,9 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/", homeHandler)
-
-	// On sert les fichiers statiques depuis le dossier courant "."
-	// de cette façon, /static/style.css correspondra à ./style.css
-	fs := http.FileServer(http.Dir("."))
+	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	log.Println("Serveur sur http://localhost:8080")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
-		log.Fatal(err)
-	}
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }

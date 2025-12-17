@@ -1,27 +1,19 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html>
 <head>
     <meta charset="UTF-8">
     <title>Groupie Tracker</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-
-<header class="header">
     <h1>Groupie Tracker</h1>
-    <p>Liste des artistes</p>
-</header>
-
-<section class="artists-grid">
-    {{range .}}
-    <div class="artist-card">
-        <div class="artist-image-wrapper">
-            <img class="artist-image" src="{{.Image}}" alt="{{.Name}}">
+    <div class="grid">
+        {{range .}}
+        <div>
+            <img src="{{.Image}}" alt="{{.Name}}">
+            <p>{{.Name}}</p>
         </div>
-        <div class="artist-name">{{.Name}}</div>
+        {{end}}
     </div>
-    {{end}}
-</section>
-
 </body>
 </html>

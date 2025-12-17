@@ -64,14 +64,20 @@
             const membersList = membersDiv.innerText.split('|').filter(m => m.trim() !== "");
             const membersContainer = document.getElementById("modal-members");
             membersContainer.innerHTML = "";
+            
             membersList.forEach(member => {
-                let span = document.createElement("span");
-                span.className = "tag";
-                span.innerText = member;
-                membersContainer.appendChild(span);
+                let cleanMember = member.trim(); 
+                
+                if (cleanMember !== "") {
+                    let span = document.createElement("span");
+                    span.className = "tag";
+                    span.innerText = cleanMember;
+                    membersContainer.appendChild(span);
+                }
             });
+
             modal.style.display = "block";
-            document.body.style.overflow = "hidden"; // Empêcher le scroll derrière
+            document.body.style.overflow = "hidden";fr
             loadRelations(id);
         }
         function closeModal() {
@@ -98,14 +104,14 @@
                 
                 let futureConcerts = [];
                 let pastConcerts = [];
-                const today = new Date();
+                const today = new Date();   
+                
                 for (const [location, dates] of Object.entries(data.datesLocations)) {
                     const cleanLoc = location.replace(/_/g, " ").replace(/-/g, ", ").replace(/\b\w/g, l => l.toUpperCase());
 
                     dates.forEach(dateStr => {
                         const parts = dateStr.split('-');
-                        const concertDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`); // YYYY-MM-DD
-
+                        const concertDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`); 
                         const concertObj = { date: dateStr, loc: cleanLoc, dateObj: concertDate };
 
                         if (concertDate >= today) {

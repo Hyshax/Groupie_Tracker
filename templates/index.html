@@ -1,19 +1,145 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Groupie Tracker</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <h1>Groupie Tracker</h1>
+    
     <div class="grid">
         {{range .}}
-        <div>
+        <div class="card" onclick="openModal('{{.ID}}', '{{.Name}}', '{{.Image}}', '{{.CreationDate}}', '{{.FirstAlbum}}')">
             <img src="{{.Image}}" alt="{{.Name}}">
             <p>{{.Name}}</p>
+            
+            <div class="hidden-members" id="members-{{.ID}}" style="display:none;">
+                {{range .Members}}<span>{{.}}</span>|{{end}}
+            </div>
         </div>
         {{end}}
     </div>
+
+    <div id="artistModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            
+            <div class="modal-header">
+                <img id="modal-img" src="" alt="">
+                <div class="modal-info">
+                    <h2 id="modal-name">Nom de l'artiste</h2>
+                    <p><strong>Création :</strong> <span id="modal-creation"></span></p>
+                    <p><strong>Premier Album :</strong> <span id="modal-album"></span></p>
+                    
+                    <div class="members-section">
+                        <h3>Membres</h3>
+                        <div id="modal-members" class="tags-container"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="concerts-container">
+                <div class="column future">
+                    <h3>Concerts Futurs</h3>
+                    <ul id="future-concerts-list">Chargement...</ul>
+                </div>
+                <div class="column past">
+                    <h3>Concerts Passés</h3>
+                    <ul id="past-concerts-list">Chargement...</ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function openModal(id, name, image, creation, firstAlbum) {
+            const modal = document.getElementById("artistModal");
+            document.getElementById("modal-name").innerText = name;
+            document.getElementById("modal-img").src = image;
+            document.getElementById("modal-creation").innerText = creation;
+            document.getElementById("modal-album").innerText = firstAlbum;
+            const membersDiv = document.getElementById("members-" + id);
+            const membersList = membersDiv.innerText.split('|').filter(m => m.trim() !== "");
+            const membersContainer = document.getElementById("modal-members");
+            membersContainer.innerHTML = "";
+            membersList.forEach(member => {
+                let span = document.createElement("span");
+                span.className = "tag";
+                span.innerText = member;
+                membersContainer.appendChild(span);
+            });
+            modal.style.display = "block";
+            document.body.style.overflow = "hidden"; // Empêcher le scroll derrière
+            loadRelations(id);
+        }
+        function closeModal() {
+            document.getElementById("artistModal").style.display = "none";
+            document.body.style.overflow = "auto";
+        }
+        window.onclick = function(event) {
+            const modal = document.getElementById("artistModal");
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+        async function loadRelations(id) {
+            const futureList = document.getElementById("future-concerts-list");
+            const pastList = document.getElementById("past-concerts-list");
+            
+            futureList.innerHTML = '<li class="loading">Chargement des données...</li>';
+            pastList.innerHTML = '<li class="loading">Chargement des données...</li>';
+
+            try {
+                const response = await fetch(`https://groupietrackers.herokuapp.com/api/relation/${id}`);
+                const data = await response.json();
+                
+                let futureConcerts = [];
+                let pastConcerts = [];
+                const today = new Date();
+                for (const [location, dates] of Object.entries(data.datesLocations)) {
+                    const cleanLoc = location.replace(/_/g, " ").replace(/-/g, ", ").replace(/\b\w/g, l => l.toUpperCase());
+
+                    dates.forEach(dateStr => {
+                        const parts = dateStr.split('-');
+                        const concertDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`); // YYYY-MM-DD
+
+                        const concertObj = { date: dateStr, loc: cleanLoc, dateObj: concertDate };
+
+                        if (concertDate >= today) {
+                            futureConcerts.push(concertObj);
+                        } else {
+                            pastConcerts.push(concertObj);
+                        }
+                    });
+                }
+                futureConcerts.sort((a, b) => a.dateObj - b.dateObj);
+                pastConcerts.sort((a, b) => b.dateObj - a.dateObj);
+
+                renderList(futureList, futureConcerts);
+                renderList(pastList, pastConcerts);
+
+            } catch (error) {
+                console.error(error);
+                futureList.innerHTML = "<li>Erreur de chargement</li>";
+                pastList.innerHTML = "<li>Erreur de chargement</li>";
+            }
+        }
+
+        function renderList(element, data) {
+            element.innerHTML = "";
+            if (data.length === 0) {
+                element.innerHTML = "<li>Aucun concert.</li>";
+                return;
+            }
+            data.forEach(c => {
+                let li = document.createElement("li");
+                li.innerHTML = `<span class="c-date">${c.date}</span> <span class="c-loc">${c.loc}</span>`;
+                element.appendChild(li);
+            });
+        }
+    </script>
 </body>
 </html>

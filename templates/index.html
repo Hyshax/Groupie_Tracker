@@ -11,13 +11,18 @@
     
     <div class="grid">
         {{range .}}
-        <div class="card" onclick="openModal('{{.ID}}', '{{.Name}}', '{{.Image}}', '{{.CreationDate}}', '{{.FirstAlbum}}')">
+        <div class="card" 
+             onclick="openModal(this)"
+             data-id="{{.ID}}"
+             data-name="{{.Name}}"
+             data-image="{{.Image}}"
+             data-creation="{{.CreationDate}}"
+             data-album="{{.FirstAlbum}}">
+            
             <img src="{{.Image}}" alt="{{.Name}}">
             <p>{{.Name}}</p>
             
-            <div class="hidden-members" id="members-{{.ID}}" style="display:none;">
-                {{range .Members}}<span>{{.}}</span>|{{end}}
-            </div>
+            <div class="hidden-members" id="members-{{.ID}}" style="display:none;">{{range .Members}}{{.}}|{{end}}</div>
         </div>
         {{end}}
     </div>
@@ -54,20 +59,28 @@
     </div>
 
     <script>
-        async function openModal(id, name, image, creation, firstAlbum) {
+        async function openModal(element) {
+            const id = element.dataset.id;
+            const name = element.dataset.name;
+            const image = element.dataset.image;
+            const creation = element.dataset.creation;
+            const firstAlbum = element.dataset.album;
+
             const modal = document.getElementById("artistModal");
             document.getElementById("modal-name").innerText = name;
             document.getElementById("modal-img").src = image;
             document.getElementById("modal-creation").innerText = creation;
             document.getElementById("modal-album").innerText = firstAlbum;
+            
             const membersDiv = document.getElementById("members-" + id);
-            const membersList = membersDiv.innerText.split('|').filter(m => m.trim() !== "");
+            const rawMembers = membersDiv.textContent || membersDiv.innerText;
+            const membersList = rawMembers.split('|').filter(m => m.trim() !== "");
+            
             const membersContainer = document.getElementById("modal-members");
             membersContainer.innerHTML = "";
             
             membersList.forEach(member => {
                 let cleanMember = member.trim(); 
-                
                 if (cleanMember !== "") {
                     let span = document.createElement("span");
                     span.className = "tag";
@@ -77,13 +90,16 @@
             });
 
             modal.style.display = "block";
-            document.body.style.overflow = "hidden";fr
+            document.body.style.overflow = "hidden";
+            
             loadRelations(id);
         }
+
         function closeModal() {
             document.getElementById("artistModal").style.display = "none";
             document.body.style.overflow = "auto";
         }
+
         window.onclick = function(event) {
             const modal = document.getElementById("artistModal");
             if (event.target == modal) {
@@ -100,6 +116,7 @@
 
             try {
                 const response = await fetch(`https://groupietrackers.herokuapp.com/api/relation/${id}`);
+                if (!response.ok) throw new Error("Erreur réseau"); // Gestion erreur HTTP
                 const data = await response.json();
                 
                 let futureConcerts = [];
@@ -121,6 +138,7 @@
                         }
                     });
                 }
+                
                 futureConcerts.sort((a, b) => a.dateObj - b.dateObj);
                 pastConcerts.sort((a, b) => b.dateObj - a.dateObj);
 
@@ -129,8 +147,8 @@
 
             } catch (error) {
                 console.error(error);
-                futureList.innerHTML = "<li>Erreur de chargement</li>";
-                pastList.innerHTML = "<li>Erreur de chargement</li>";
+                futureList.innerHTML = "<li>Info non disponible</li>";
+                pastList.innerHTML = "<li>Info non disponible</li>";
             }
         }
 
@@ -148,4 +166,4 @@
         }
     </script>
 </body>
-</html>
+</html> 

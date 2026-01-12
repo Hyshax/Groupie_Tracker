@@ -20,7 +20,6 @@ type Artist struct {
 	FirstAlbum   string   `json:"firstAlbum"`
 }
 
-// Middleware CORS pour permettre les requêtes cross-origin
 func enableCORS(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -37,7 +36,6 @@ func enableCORS(next http.HandlerFunc) http.HandlerFunc {
 }
 
 func GetArtists() []Artist {
-	// la fonction recupère les artistes depuis l'api et les decodes en struct Artist
 	resp, err := http.Get("https://groupietrackers.herokuapp.com/api/artists")
 	if err != nil {
 		log.Println("Error fetching artists:", err)
@@ -46,13 +44,15 @@ func GetArtists() []Artist {
 	defer resp.Body.Close()
 
 	var artists []Artist
-	json.NewDecoder(resp.Body).Decode(&artists)
+	if err := json.NewDecoder(resp.Body).Decode(&artists); err != nil {
+		log.Println("Error decoding artists:", err)
+		return []Artist{}
+	}
 
 	return artists
 }
 
 func GetArtistByID(id int) *Artist {
-	// permet de recupérer un artiste par son ID
 	artists := GetArtists()
 
 	for _, artist := range artists {
@@ -60,49 +60,56 @@ func GetArtistByID(id int) *Artist {
 			return &artist
 		}
 	}
-
 	return nil
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		http.NotFound(w, r)
+		return
+	}
 	artists := GetArtists()
 	tmpl.Execute(w, artists)
 }
 
-// API endpoint pour récupérer tous les artistes en JSON
 func apiArtistsHandler(w http.ResponseWriter, r *http.Request) {
 	artists := GetArtists()
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(artists)
 }
 
-// API endpoint pour récupérer un artiste spécifique par ID
 func apiArtistByIDHandler(w http.ResponseWriter, r *http.Request) {
 	pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-	id, _ := strconv.Atoi(pathParts[2])
+
+	if len(pathParts) < 3 || pathParts[2] == "" {
+		http.Error(w, "ID manquant", http.StatusBadRequest)
+		return
+	}
+
+	id, err := strconv.Atoi(pathParts[2])
+	if err != nil {
+		http.Error(w, "ID invalide", http.StatusBadRequest)
+		return
+	}
+
 	artist := GetArtistByID(id)
+	if artist == nil {
+		http.NotFound(w, r)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(artist)
 }
 
 func main() {
-	// Routes HTML
 	http.HandleFunc("/", homeHandler)
-
-	// Routes API avec CORS
 	http.HandleFunc("/api/artists", enableCORS(apiArtistsHandler))
 	http.HandleFunc("/api/artists/", enableCORS(apiArtistByIDHandler))
 
-	// Fichiers statiques
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	log.Println("Serveur sur http://localhost:8080")
-	log.Println("API disponible sur:")
-	log.Println("  - GET /api/artists (tous les artistes)")
-	log.Println("  - GET /api/artists/{id} (artiste spécifique)")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

@@ -20,6 +20,11 @@ type Artist struct {
 	FirstAlbum   string   `json:"firstAlbum"`
 }
 
+type Relation struct {
+	ID             int                 `json:"id"`
+	DatesLocations map[string][]string `json:"datesLocations"`
+}
+
 func enableCORS(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -30,7 +35,6 @@ func enableCORS(next http.HandlerFunc) http.HandlerFunc {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-
 		next(w, r)
 	}
 }
@@ -44,23 +48,35 @@ func GetArtists() []Artist {
 	defer resp.Body.Close()
 
 	var artists []Artist
-	if err := json.NewDecoder(resp.Body).Decode(&artists); err != nil {
-		log.Println("Error decoding artists:", err)
-		return []Artist{}
-	}
-
+	json.NewDecoder(resp.Body).Decode(&artists)
 	return artists
 }
 
 func GetArtistByID(id int) *Artist {
 	artists := GetArtists()
-
 	for _, artist := range artists {
 		if artist.ID == id {
 			return &artist
 		}
 	}
 	return nil
+}
+
+func GetRelations(id int) *Relation {
+	url := "https://groupietrackers.herokuapp.com/api/relation/" + strconv.Itoa(id)
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Println("Error fetching relations:", err)
+		return nil
+	}
+	defer resp.Body.Close()
+
+	var relation Relation
+	if err := json.NewDecoder(resp.Body).Decode(&relation); err != nil {
+		log.Println("Error decoding relations:", err)
+		return nil
+	}
+	return &relation
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
@@ -80,32 +96,52 @@ func apiArtistsHandler(w http.ResponseWriter, r *http.Request) {
 
 func apiArtistByIDHandler(w http.ResponseWriter, r *http.Request) {
 	pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-
 	if len(pathParts) < 3 || pathParts[2] == "" {
 		http.Error(w, "ID manquant", http.StatusBadRequest)
 		return
 	}
+	id, err := strconv.Atoi(pathParts[2])
+	if err != nil {
+		http.Error(w, "ID invalide", http.StatusBadRequest)
+		return
+	}
+	artist := GetArtistByID(id)
+	if artist == nil {
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(artist)
+}
 
+func apiRelationsHandler(w http.ResponseWriter, r *http.Request) {
+	pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	if len(pathParts) < 3 || pathParts[2] == "" {
+		http.Error(w, "ID manquant", http.StatusBadRequest)
+		return
+	}
 	id, err := strconv.Atoi(pathParts[2])
 	if err != nil {
 		http.Error(w, "ID invalide", http.StatusBadRequest)
 		return
 	}
 
-	artist := GetArtistByID(id)
-	if artist == nil {
-		http.NotFound(w, r)
+	relation := GetRelations(id)
+	if relation == nil {
+		http.Error(w, "Relations introuvables", http.StatusNotFound)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(artist)
+	json.NewEncoder(w).Encode(relation)
 }
 
 func main() {
 	http.HandleFunc("/", homeHandler)
 	http.HandleFunc("/api/artists", enableCORS(apiArtistsHandler))
 	http.HandleFunc("/api/artists/", enableCORS(apiArtistByIDHandler))
+
+	http.HandleFunc("/api/relations/", enableCORS(apiRelationsHandler))
 
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))

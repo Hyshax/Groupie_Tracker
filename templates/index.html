@@ -46,10 +46,11 @@
             </div>
 
             <div class="concerts-container">
-                <div class="column future">
-                    <h3>Concerts Futurs</h3>
-                    <ul id="future-concerts-list">Chargement...</ul>
+                <div class="column locations">
+                    <h3>Villes de Passage</h3>
+                    <ul id="locations-list">Chargement...</ul>
                 </div>
+    
                 <div class="column past">
                     <h3>Concerts Passés</h3>
                     <ul id="past-concerts-list">Chargement...</ul>
@@ -108,11 +109,11 @@
         }
 
         async function loadRelations(id) {
-            const futureList = document.getElementById("future-concerts-list");
+            const locationsList = document.getElementById("locations-list"); 
             const pastList = document.getElementById("past-concerts-list");
             
-            futureList.innerHTML = '<li class="loading">Chargement des données...</li>';
-            pastList.innerHTML = '<li class="loading">Chargement des données...</li>';
+            locationsList.innerHTML = '<li class="loading">Chargement...</li>';
+            pastList.innerHTML = '<li class="loading">Chargement...</li>';
 
             try {
                 const response = await fetch(`/api/relations/${id}`);
@@ -120,43 +121,58 @@
                 if (!response.ok) throw new Error("Erreur réseau");
                 const data = await response.json();
                 
-                let futureConcerts = [];
                 let pastConcerts = [];
+                let allLocations = []; 
                 const today = new Date();   
 
                 for (const [location, dates] of Object.entries(data.datesLocations)) {
                     const cleanLoc = location.replace(/_/g, " ").replace(/-/g, ", ").replace(/\b\w/g, l => l.toUpperCase());
+                    
+                    allLocations.push(cleanLoc);
 
                     dates.forEach(dateStr => {
                         const parts = dateStr.split('-');
                         const concertDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`); 
                         const concertObj = { date: dateStr, loc: cleanLoc, dateObj: concertDate };
 
-                        if (concertDate >= today) {
-                            futureConcerts.push(concertObj);
-                        } else {
+                        if (concertDate < today) {
                             pastConcerts.push(concertObj);
                         }
                     });
                 }
                 
-                futureConcerts.sort((a, b) => a.dateObj - b.dateObj);
                 pastConcerts.sort((a, b) => b.dateObj - a.dateObj);
+                allLocations.sort();
 
-                renderList(futureList, futureConcerts);
-                renderList(pastList, pastConcerts);
+                renderSimpleList(locationsList, allLocations); 
+                renderConcertList(pastList, pastConcerts);    
 
             } catch (error) {
                 console.error(error);
-                futureList.innerHTML = "<li>Info non disponible</li>";
+                locationsList.innerHTML = "<li>Info non disponible</li>";
                 pastList.innerHTML = "<li>Info non disponible</li>";
             }
         }
 
-        function renderList(element, data) {
+        function renderSimpleList(element, data) {
             element.innerHTML = "";
             if (data.length === 0) {
-                element.innerHTML = "<li>Aucun concert.</li>";
+                element.innerHTML = "<li>Aucune donnée.</li>";
+                return;
+            }
+            const uniqueData = [...new Set(data)];
+            
+            uniqueData.forEach(item => {
+                let li = document.createElement("li");
+                li.innerHTML = `<span class="c-loc" style="text-align:left;">${item}</span>`;
+                element.appendChild(li);
+            });
+        }
+
+        function renderConcertList(element, data) {
+            element.innerHTML = "";
+            if (data.length === 0) {
+                element.innerHTML = "<li>Aucun concert passé.</li>";
                 return;
             }
             data.forEach(c => {
